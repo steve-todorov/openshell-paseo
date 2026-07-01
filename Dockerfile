@@ -23,8 +23,16 @@ RUN npm install -g playwright@1.49.1 \
  && playwright install --with-deps chromium \
  && rm -rf /var/lib/apt/lists/*
 
-# bun, system-wide.
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v1.1.38"
+# bun (pinned, BASELINE build). The kata sandbox guest CPU (Xeon X5650, Westmere)
+# lacks AVX2, and the standard bun build SIGILLs on non-AVX2 CPUs; the baseline
+# build targets SSE4.2. Installed directly (not via bun.sh/install, which picks the
+# AVX2 build from the CI runner's CPU). `unzip` is installed in the apt step above.
+RUN curl -fsSL -o /tmp/bun.zip \
+      https://github.com/oven-sh/bun/releases/download/bun-v1.1.38/bun-linux-x64-baseline.zip \
+ && unzip -q /tmp/bun.zip -d /tmp \
+ && install -m 0755 /tmp/bun-linux-x64-baseline/bun /usr/local/bin/bun \
+ && ln -sf /usr/local/bin/bun /usr/local/bin/bunx \
+ && rm -rf /tmp/bun.zip /tmp/bun-linux-x64-baseline
 
 # nvm for root; pin its `default` alias to the base image's pre-installed Node so
 # shells/projects get that version by default, while `nvm install <X>` still works.
