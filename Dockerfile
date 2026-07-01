@@ -17,26 +17,28 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends curl ca-certificates unzip \
  && rm -rf /var/lib/apt/lists/*
 
-# Playwright + headless Chromium and its OS dependencies. Browsers go to a GLOBAL,
-# world-readable path (/ms-playwright), NOT any user's home, so a single copy serves
-# every sandbox and the unprivileged agent user (uid 998) can read it.
+# Playwright + headless Chromium and its OS dependencies. Browsers go to a single
+# GLOBAL, world-readable store — under /usr/local, NOT a custom top-level dir and NOT
+# any user's home. This location matters: the OpenShell supervisor confines the
+# unprivileged agent (uid 998) to an allowlist of standard system paths (/usr, /bin,
+# /sandbox, /tmp). A custom root path like /ms-playwright is traversable but read/exec
+# is DENIED for the agent (verified), whereas /usr/local is allowed (that's why bun
+# works). So the browsers live at /usr/local/ms-playwright.
 #
-# Runtime resolution caveat: OpenShell STRIPS image ENV from the sandbox agent
-# environment (verified: PLAYWRIGHT_BROWSERS_PATH is empty at runtime; HOME=/sandbox),
-# and `sandbox exec` runs non-login shells (so profile.d/.bashrc aren't sourced). So we
-# CANNOT rely on the env var at runtime. Instead we symlink the agent's default cache
-# location (HOME/.cache/ms-playwright, i.e. /sandbox/.cache) to the global store; the
-# agent's Playwright resolves browsers via that default path with zero env config. The
-# symlink is just a pointer — the browsers themselves stay global. (/sandbox is the
-# base image's agent home, virtiofs-shared into the sandbox, so the baked symlink
-# survives at runtime.) The playwright npm package installs to /usr/lib/node_modules,
-# also world-readable.
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# Runtime resolution: OpenShell STRIPS image ENV from the agent environment (verified:
+# PLAYWRIGHT_BROWSERS_PATH is empty at runtime; HOME=/sandbox) and `sandbox exec` runs
+# non-login shells, so neither the env var nor profile.d is honored. We therefore
+# symlink the agent's default cache path (HOME/.cache/ms-playwright, i.e. /sandbox/.cache)
+# to the global store; Playwright's default resolution finds it with zero env config.
+# The symlink is just a pointer — the browsers stay global. (/sandbox is the base
+# image's agent home, virtiofs-shared into the sandbox, so the baked symlink survives.)
+# The playwright npm package installs to /usr/lib/node_modules, also allowlisted.
+ENV PLAYWRIGHT_BROWSERS_PATH=/usr/local/ms-playwright
 RUN npm install -g playwright@1.49.1 \
  && playwright install --with-deps chromium \
- && chmod -R a+rX /ms-playwright \
+ && chmod -R a+rX /usr/local/ms-playwright \
  && mkdir -p /sandbox/.cache \
- && ln -sfn /ms-playwright /sandbox/.cache/ms-playwright \
+ && ln -sfn /usr/local/ms-playwright /sandbox/.cache/ms-playwright \
  && chmod -R a+rX /sandbox/.cache \
  && rm -rf /var/lib/apt/lists/*
 
