@@ -5,6 +5,10 @@
 ARG BASE_IMAGE=ghcr.io/nvidia/openshell-community/sandboxes/base@sha256:aeef1c63f00e2913ea002ccb3aaf925f338b5c5d70e63576f0d95c16a138044e
 FROM ${BASE_IMAGE}
 
+# The base image may run as a non-root user; switch to root for all install steps.
+# OpenShell starts sandboxes as runAsUser:0 at runtime.
+USER root
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Base tooling needed by the installers below (curl/ca-certs are usually present;
