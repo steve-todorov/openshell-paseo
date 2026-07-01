@@ -17,17 +17,27 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends curl ca-certificates unzip \
  && rm -rf /var/lib/apt/lists/*
 
-# Playwright + headless Chromium and its OS dependencies. Install the browsers to a
-# GLOBAL, world-readable path (NOT root's home) so the OpenShell sandbox agent user
-# (uid 998, unprivileged) can use them at runtime — the supervisor runs workloads as
-# uid 998, so browsers under /root/.cache would be unreadable. PLAYWRIGHT_BROWSERS_PATH
-# is set persistently so both the build-time install and the runtime resolver use
-# /ms-playwright. The playwright npm package installs to the system global
-# node_modules (/usr/lib/node_modules), also world-readable.
+# Playwright + headless Chromium and its OS dependencies. Browsers go to a GLOBAL,
+# world-readable path (/ms-playwright), NOT any user's home, so a single copy serves
+# every sandbox and the unprivileged agent user (uid 998) can read it.
+#
+# Runtime resolution caveat: OpenShell STRIPS image ENV from the sandbox agent
+# environment (verified: PLAYWRIGHT_BROWSERS_PATH is empty at runtime; HOME=/sandbox),
+# and `sandbox exec` runs non-login shells (so profile.d/.bashrc aren't sourced). So we
+# CANNOT rely on the env var at runtime. Instead we symlink the agent's default cache
+# location (HOME/.cache/ms-playwright, i.e. /sandbox/.cache) to the global store; the
+# agent's Playwright resolves browsers via that default path with zero env config. The
+# symlink is just a pointer — the browsers themselves stay global. (/sandbox is the
+# base image's agent home, virtiofs-shared into the sandbox, so the baked symlink
+# survives at runtime.) The playwright npm package installs to /usr/lib/node_modules,
+# also world-readable.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npm install -g playwright@1.49.1 \
  && playwright install --with-deps chromium \
  && chmod -R a+rX /ms-playwright \
+ && mkdir -p /sandbox/.cache \
+ && ln -sfn /ms-playwright /sandbox/.cache/ms-playwright \
+ && chmod -R a+rX /sandbox/.cache \
  && rm -rf /var/lib/apt/lists/*
 
 # bun (pinned, BASELINE build). The kata sandbox guest CPU (Xeon X5650, Westmere)
