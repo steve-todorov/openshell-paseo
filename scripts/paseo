@@ -1,0 +1,7 @@
+#!/bin/sh
+# Paseo ships only /opt/Paseo/Paseo (Electron). The CLI/daemon is @getpaseo/cli run
+# under Electron's bundled Node. This shim lives in /usr/local/bin (agent-allowlisted)
+# and execs /opt/Paseo (agent needs /opt in its sandbox policy read_only).
+exec env ELECTRON_RUN_AS_NODE=1 /opt/Paseo/Paseo \
+  /opt/Paseo/resources/app.asar.unpacked/dist/daemon/node-entrypoint-runner.js node-script \
+  /opt/Paseo/resources/app.asar/node_modules/@getpaseo/cli/dist/index.js "$@"

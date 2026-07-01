@@ -62,3 +62,21 @@ RUN mkdir -p "$NVM_DIR" \
  && BASE_NODE="$(node -v)" \
  && nvm install "$BASE_NODE" \
  && nvm alias default "$BASE_NODE"
+
+# --- Paseo (daemon + Desktop bundle) → /opt/Paseo ---
+# getpaseo/paseo is PUBLIC; the CI build has open egress (the sandbox RUNTIME 403s on
+# GitHub release redirects, which is exactly why Paseo is baked here, not fetched at runtime).
+# The .deb pulls its Electron/GTK deps (libgtk-3, libnss3, ...) via apt.
+RUN curl -fsSL -o /tmp/paseo.deb \
+      https://github.com/getpaseo/paseo/releases/download/v0.1.102/Paseo-0.1.102-amd64.deb \
+ && apt-get update \
+ && apt-get install -y /tmp/paseo.deb \
+ && rm -f /tmp/paseo.deb \
+ && rm -rf /var/lib/apt/lists/*
+
+# paseo CLI shim (allowlisted /usr/local/bin).
+COPY scripts/paseo /usr/local/bin/paseo
+RUN chmod 0755 /usr/local/bin/paseo
+
+# --- coding agents Paseo orchestrates (npm -g → /usr/lib/node_modules, allowlisted) ---
+RUN npm install -g @anthropic-ai/claude-code@1.0.67 @github/copilot@1.0.67
