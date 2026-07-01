@@ -78,5 +78,38 @@ RUN curl -fsSL -o /tmp/paseo.deb \
 COPY scripts/paseo /usr/local/bin/paseo
 RUN chmod 0755 /usr/local/bin/paseo
 
-# --- coding agents Paseo orchestrates (npm -g → /usr/lib/node_modules, allowlisted) ---
-RUN npm install -g @anthropic-ai/claude-code@1.0.67 @github/copilot@1.0.67
+# --- coding agents Paseo orchestrates ---
+# Installed via the vendors' OFFICIAL install scripts (npm publishing is deprecated for
+# Claude Code), pinned to exact versions — we do not want moving builds in the image.
+# Run as the RUNTIME agent (uid 998), NOT root: the scripts install into $HOME
+# (~/.local/bin + ~/.local/share). As root that is /root/.local — unreadable by the
+# agent and off its PATH (the same Landlock trap Playwright/nvm hit). Running as 998 with
+# HOME=/sandbox lands the launchers AND their version/support dirs in the agent's real
+# runtime home; /sandbox is read_write in the policy, and build-time HOME == runtime
+# HOME == /sandbox, so each launcher resolves its ~/.local/share support dir at runtime.
+# /sandbox is the base image's agent home; make it agent-owned so 998 can install into it.
+RUN chown 998 /sandbox
+USER 998
+# Claude Code — native installer; first positional arg is the exact version to pin.
+# Installs $HOME/.local/bin/claude (+ $HOME/.local/share/claude); downloads are temp.
+RUN export HOME=/sandbox \
+ && curl -fsSL https://claude.ai/install.sh | bash -s 2.1.185 \
+ && rm -rf /sandbox/.claude/downloads
+# GitHub Copilot CLI — PREFIX defaults to $HOME/.local for a non-root user, so the binary
+# lands at /sandbox/.local/bin/copilot. VERSION pins the exact release tag.
+RUN export HOME=/sandbox \
+ && curl -fsSL https://gh.io/copilot-install | VERSION="v1.0.67" bash
+# Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
+# (DISABLE_UPDATES / COPILOT_AUTO_UPDATE) won't apply — bake the disable into each tool's
+# config file instead (both are read from $HOME=/sandbox at runtime, surviving the strip).
+#   Claude:  DISABLE_UPDATES blocks ALL update paths (background check + `claude update`).
+#   Copilot: autoUpdate:false is the config-file equivalent of COPILOT_AUTO_UPDATE=false.
+RUN mkdir -p /sandbox/.claude /sandbox/.copilot \
+ && printf '%s\n' '{ "env": { "DISABLE_UPDATES": "1" } }' > /sandbox/.claude/settings.json \
+ && printf '%s\n' '{ "autoUpdate": false }' > /sandbox/.copilot/settings.json
+USER root
+# PATH bridge: the agent's PATH is /sandbox/.venv/bin:/usr/local/bin:/usr/bin:/bin, and
+# ~/.local/bin is NOT on it. Symlink both launchers into /usr/local/bin (on PATH,
+# allowlisted); each launcher still resolves its support dir under /sandbox/.local.
+RUN ln -sf /sandbox/.local/bin/claude /usr/local/bin/claude \
+ && ln -sf /sandbox/.local/bin/copilot /usr/local/bin/copilot
