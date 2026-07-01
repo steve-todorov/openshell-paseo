@@ -88,7 +88,9 @@ RUN chmod 0755 /usr/local/bin/paseo
 # runtime home; /sandbox is read_write in the policy, and build-time HOME == runtime
 # HOME == /sandbox, so each launcher resolves its ~/.local/share support dir at runtime.
 # /sandbox is the base image's agent home; make it agent-owned so 998 can install into it.
-RUN chown 998 /sandbox
+# Recursive: pre-existing subdirs (e.g. /sandbox/.cache from the Playwright step, created
+# as root) must also be writable — the Claude installer writes to $HOME/.cache/claude.
+RUN chown -R 998 /sandbox
 USER 998
 # Claude Code — native installer; first positional arg is the exact version to pin.
 # Installs $HOME/.local/bin/claude (+ $HOME/.local/share/claude); downloads are temp.
