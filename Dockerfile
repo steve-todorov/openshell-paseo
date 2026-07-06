@@ -91,6 +91,20 @@ RUN export HOME=/sandbox \
 # lands at /sandbox/.local/bin/copilot. VERSION pins the exact release tag.
 RUN export HOME=/sandbox \
  && curl -fsSL https://gh.io/copilot-install | VERSION="v1.0.67" bash
+# nvm — installed as the RUNTIME agent (uid 998) into /sandbox so it is agent-owned and on
+# an allowlisted path (the old /root/.nvm was invisible to 998). The installer appends a
+# self-contained snippet (it exports NVM_DIR inline) to $HOME/.bashrc, which an interactive
+# runtime terminal sources even though image ENV is stripped and shells are non-login. Pin
+# the `default` alias to the base image's Node so projects get it without a candidate baked.
+RUN export HOME=/sandbox NVM_DIR=/sandbox/.nvm PROFILE=/sandbox/.bashrc \
+ && mkdir -p "$NVM_DIR" \
+ && touch "$PROFILE" \
+ && curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash \
+ && . "$NVM_DIR/nvm.sh" \
+ && BASE_NODE="$(node -v)" \
+ && nvm install "$BASE_NODE" \
+ && nvm alias default "$BASE_NODE" \
+ && grep -q 'NVM_DIR' /sandbox/.bashrc
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
 # (DISABLE_UPDATES / COPILOT_AUTO_UPDATE) won't apply — bake the disable into each tool's
 # config file instead (both are read from $HOME=/sandbox at runtime, surviving the strip).
