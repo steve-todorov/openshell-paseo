@@ -140,6 +140,14 @@ RUN export HOME=/sandbox \
  && claude plugin install caveman@caveman \
  && claude plugin list | grep -q 'superpowers' \
  && claude plugin list | grep -q 'caveman'
+# Register jcodemunch as a USER-scope MCP server (available in every project + git worktree)
+# and install jcm's global code-exploration CLAUDE.md policy. Both write under HOME=/sandbox,
+# surviving the runtime ENV strip. The MCP command is the stable binary (no runtime uvx fetch).
+RUN export HOME=/sandbox \
+ && claude mcp add --scope user jcodemunch -- /usr/local/bin/jcodemunch-mcp \
+ && claude mcp list | grep -q jcodemunch \
+ && jcodemunch-mcp claude-md \
+ && test -f /sandbox/.claude/CLAUDE.md
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
 # (DISABLE_UPDATES / COPILOT_AUTO_UPDATE) won't apply — bake the disable into each tool's
 # config file instead (both are read from $HOME=/sandbox at runtime, surviving the strip).
