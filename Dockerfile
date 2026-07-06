@@ -128,6 +128,18 @@ RUN export HOME=/sandbox SDKMAN_DIR=/sandbox/.sdkman \
       'sdkman_auto_selfupdate=false' \
       > /sandbox/.sdkman/etc/config \
  && grep -q 'SDKMAN_DIR' /sandbox/.bashrc
+# Pre-install the caveman marketplace + the 5 enabled plugins as uid 998 so their caches are
+# baked under /sandbox/.claude/plugins and resolve at runtime with no egress. claude-plugins-official
+# is a built-in known marketplace (no explicit add needed). carlspring is intentionally excluded.
+RUN export HOME=/sandbox \
+ && claude plugin marketplace add JuliusBrussee/caveman \
+ && claude plugin install superpowers@claude-plugins-official \
+ && claude plugin install frontend-design@claude-plugins-official \
+ && claude plugin install skill-creator@claude-plugins-official \
+ && claude plugin install supabase@claude-plugins-official \
+ && claude plugin install caveman@caveman \
+ && claude plugin list | grep -q 'superpowers' \
+ && claude plugin list | grep -q 'caveman'
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
 # (DISABLE_UPDATES / COPILOT_AUTO_UPDATE) won't apply — bake the disable into each tool's
 # config file instead (both are read from $HOME=/sandbox at runtime, surviving the strip).
