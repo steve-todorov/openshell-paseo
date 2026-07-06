@@ -138,8 +138,7 @@ RUN export HOME=/sandbox \
  && claude plugin install skill-creator@claude-plugins-official \
  && claude plugin install supabase@claude-plugins-official \
  && claude plugin install caveman@caveman \
- && claude plugin list | grep -q 'superpowers' \
- && claude plugin list | grep -q 'caveman'
+ && for p in superpowers frontend-design skill-creator supabase caveman; do claude plugin list | grep -q "$p" || exit 1; done
 # Register jcodemunch as a USER-scope MCP server (available in every project + git worktree)
 # and install jcm's global code-exploration CLAUDE.md policy. Both write under HOME=/sandbox,
 # surviving the runtime ENV strip. The MCP command is the stable binary (no runtime uvx fetch).
