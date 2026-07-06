@@ -80,6 +80,16 @@ RUN chmod 0755 /usr/local/bin/paseo
 # /sandbox is the base image's agent home; make it agent-owned so 998 can install into it.
 # Recursive: pre-existing subdirs (e.g. /sandbox/.cache from the Playwright step, created
 # as root) must also be writable — the Claude installer writes to $HOME/.cache/claude.
+# jcodemunch-mcp — Python MCP server for code navigation. Installed GLOBALLY into a venv
+# under /usr/local (allowlisted; /opt is NOT on uid 998's Landlock allowlist) with a stable
+# /usr/local/bin/jcodemunch-mcp symlink that the MCP registration and every hook reference.
+# Pinned hard: the runtime strips image ENV, so we bake the exact version (no runtime upgrade).
+RUN python3 -m venv /usr/local/lib/jcodemunch \
+ && /usr/local/lib/jcodemunch/bin/pip install --no-cache-dir jcodemunch-mcp==1.108.55 \
+ && ln -sf /usr/local/lib/jcodemunch/bin/jcodemunch-mcp /usr/local/bin/jcodemunch-mcp \
+ && chmod -R a+rX /usr/local/lib/jcodemunch \
+ && /usr/local/bin/jcodemunch-mcp --version | grep -q '1.108.55'
+
 RUN chown -R 998 /sandbox
 USER 998
 # Claude Code — native installer; first positional arg is the exact version to pin.
