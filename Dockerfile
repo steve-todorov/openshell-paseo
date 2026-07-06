@@ -149,13 +149,16 @@ RUN export HOME=/sandbox \
  && jcodemunch-mcp claude-md \
  && test -f /sandbox/.claude/CLAUDE.md
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
-# (DISABLE_UPDATES / COPILOT_AUTO_UPDATE) won't apply — bake the disable into each tool's
-# config file instead (both are read from $HOME=/sandbox at runtime, surviving the strip).
-#   Claude:  DISABLE_UPDATES blocks ALL update paths (background check + `claude update`).
+# won't apply — bake the disable into each tool's config file instead (both are read
+# from $HOME=/sandbox at runtime, surviving the strip).
+#   Claude:  the update-blocking env key lives in the COPYed docker/claude/settings.json
+#            asset below (blocks ALL update paths: background check + `claude update`).
 #   Copilot: autoUpdate:false is the config-file equivalent of COPILOT_AUTO_UPDATE=false.
 RUN mkdir -p /sandbox/.claude /sandbox/.copilot \
- && printf '%s\n' '{ "env": { "DISABLE_UPDATES": "1" } }' > /sandbox/.claude/settings.json \
  && printf '%s\n' '{ "autoUpdate": false }' > /sandbox/.copilot/settings.json
+# Canonical claude settings — COPYed LAST so `claude plugin install` (above) cannot clobber
+# enabledPlugins. Agent-owned so it is readable/writable at runtime under HOME=/sandbox.
+COPY --chown=998:998 docker/claude/settings.json /sandbox/.claude/settings.json
 USER root
 # PATH bridge: the agent's PATH is /sandbox/.venv/bin:/usr/local/bin:/usr/bin:/bin, and
 # ~/.local/bin is NOT on it. Symlink both launchers into /usr/local/bin (on PATH,
