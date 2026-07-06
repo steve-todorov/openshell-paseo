@@ -14,7 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Base tooling needed by the installers below (curl/ca-certs are usually present;
 # install defensively). unzip is required by the bun installer.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends curl ca-certificates unzip \
+ && apt-get install -y --no-install-recommends curl ca-certificates unzip zip \
  && rm -rf /var/lib/apt/lists/*
 
 # Playwright + headless Chromium and its OS dependencies. Browsers go to a single
@@ -52,16 +52,6 @@ RUN curl -fsSL -o /tmp/bun.zip \
  && install -m 0755 /tmp/bun-linux-x64-baseline/bun /usr/local/bin/bun \
  && ln -sf /usr/local/bin/bun /usr/local/bin/bunx \
  && rm -rf /tmp/bun.zip /tmp/bun-linux-x64-baseline
-
-# nvm for root; pin its `default` alias to the base image's pre-installed Node so
-# shells/projects get that version by default, while `nvm install <X>` still works.
-ENV NVM_DIR=/root/.nvm
-RUN mkdir -p "$NVM_DIR" \
- && curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash \
- && . "$NVM_DIR/nvm.sh" \
- && BASE_NODE="$(node -v)" \
- && nvm install "$BASE_NODE" \
- && nvm alias default "$BASE_NODE"
 
 # --- Paseo (daemon + Desktop bundle) → /opt/Paseo ---
 # getpaseo/paseo is PUBLIC; the CI build has open egress (the sandbox RUNTIME 403s on
