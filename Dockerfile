@@ -105,6 +105,19 @@ RUN export HOME=/sandbox NVM_DIR=/sandbox/.nvm PROFILE=/sandbox/.bashrc \
  && nvm install "$BASE_NODE" \
  && nvm alias default "$BASE_NODE" \
  && grep -q 'NVM_DIR' /sandbox/.bashrc
+# SDKMAN — installed as uid 998 into /sandbox (agent-owned, allowlisted). Its installer
+# appends a self-contained snippet (exports SDKMAN_DIR inline) to $HOME/.bashrc. No candidates
+# are baked; the agent installs Java/Gradle/etc. on demand. Disable self-update in the config
+# file because the ENV toggles do not survive the runtime image-ENV strip (same rule as
+# claude/copilot). sdkman_auto_answer avoids interactive prompts during agent use.
+RUN export HOME=/sandbox SDKMAN_DIR=/sandbox/.sdkman \
+ && curl -fsSL "https://get.sdkman.io?rcupdate=true" | bash \
+ && printf '%s\n' \
+      'sdkman_auto_answer=true' \
+      'sdkman_selfupdate_feature=false' \
+      'sdkman_auto_selfupdate=false' \
+      > /sandbox/.sdkman/etc/config \
+ && grep -q 'SDKMAN_DIR' /sandbox/.bashrc
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
 # (DISABLE_UPDATES / COPILOT_AUTO_UPDATE) won't apply — bake the disable into each tool's
 # config file instead (both are read from $HOME=/sandbox at runtime, surviving the strip).
