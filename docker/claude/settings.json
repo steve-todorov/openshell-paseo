@@ -1,0 +1,45 @@
+{
+  "env": {
+    "DISABLE_UPDATES": "1",
+    "JCODEMUNCH_ENFORCE": "strict"
+  },
+  "attribution": { "commit": "", "pr": "" },
+  "model": "sonnet",
+  "effortLevel": "medium",
+  "tui": "fullscreen",
+  "theme": "dark",
+  "remoteControlAtStartup": true,
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "caveman@caveman": true,
+    "frontend-design@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": { "source": { "source": "github", "repo": "JuliusBrussee/caveman" } }
+  },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Read|Grep", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-pretooluse" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-posttooluse" } ] }
+    ],
+    "PreCompact": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-precompact" } ] }
+    ],
+    "TaskCompleted": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-taskcomplete" } ] }
+    ],
+    "SubagentStart": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-subagent-start" } ] }
+    ],
+    "WorktreeCreate": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-event create" } ] }
+    ],
+    "WorktreeRemove": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "/usr/local/bin/jcodemunch-mcp hook-event remove" } ] }
+    ]
+  }
+}

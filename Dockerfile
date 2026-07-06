@@ -14,7 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Base tooling needed by the installers below (curl/ca-certs are usually present;
 # install defensively). unzip is required by the bun installer.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends curl ca-certificates unzip zip \
+ && apt-get install -y --no-install-recommends curl ca-certificates unzip zip python3-venv git \
  && rm -rf /var/lib/apt/lists/*
 
 # Playwright + headless Chromium and its OS dependencies. Browsers go to a single
