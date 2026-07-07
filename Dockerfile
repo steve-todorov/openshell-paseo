@@ -128,10 +128,12 @@ RUN export HOME=/sandbox SDKMAN_DIR=/sandbox/.sdkman \
       'sdkman_auto_selfupdate=false' \
       > /sandbox/.sdkman/etc/config \
  && grep -q 'SDKMAN_DIR' /sandbox/.bashrc
-# Pre-install the caveman marketplace + the 5 enabled plugins as uid 998 so their caches are
-# baked under /sandbox/.claude/plugins and resolve at runtime with no egress. claude-plugins-official
-# is a built-in known marketplace (no explicit add needed). carlspring is intentionally excluded.
+# Pre-install both marketplaces + the 5 enabled plugins as uid 998 so their caches are baked
+# under /sandbox/.claude/plugins and resolve at runtime with no egress. A fresh claude HOME has
+# NO marketplaces configured (not even claude-plugins-official), so BOTH must be added explicitly
+# before install; the add clones the catalog into known_marketplaces.json. carlspring is excluded.
 RUN export HOME=/sandbox \
+ && claude plugin marketplace add anthropics/claude-plugins-official \
  && claude plugin marketplace add JuliusBrussee/caveman \
  && claude plugin install superpowers@claude-plugins-official \
  && claude plugin install frontend-design@claude-plugins-official \
@@ -145,8 +147,9 @@ RUN export HOME=/sandbox \
 RUN export HOME=/sandbox \
  && claude mcp add --scope user jcodemunch -- /usr/local/bin/jcodemunch-mcp \
  && claude mcp list | grep -q jcodemunch \
- && jcodemunch-mcp claude-md \
- && test -f /sandbox/.claude/CLAUDE.md
+ && mkdir -p /sandbox/.claude \
+ && jcodemunch-mcp claude-md --generate --format full > /sandbox/.claude/CLAUDE.md \
+ && test -s /sandbox/.claude/CLAUDE.md
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
 # won't apply — bake the disable into each tool's config file instead (both are read
 # from $HOME=/sandbox at runtime, surviving the strip).
