@@ -15,6 +15,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 # install defensively). unzip is required by the bun installer.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl ca-certificates unzip zip python3-venv git \
+      build-essential autoconf re2c bison pkg-config \
+      libxml2-dev libssl-dev libsqlite3-dev libcurl4-openssl-dev libonig-dev \
+      libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libreadline-dev \
+      libbz2-dev libxslt1-dev \
+      libpq-dev default-libmysqlclient-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Playwright + headless Chromium and its OS dependencies. Browsers go to a single
