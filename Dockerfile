@@ -191,4 +191,5 @@ USER root
 # ~/.local/bin is NOT on it. Symlink both launchers into /usr/local/bin (on PATH,
 # allowlisted); each launcher still resolves its support dir under /sandbox/.local.
 RUN ln -sf /sandbox/.local/bin/claude /usr/local/bin/claude \
- && ln -sf /sandbox/.local/bin/copilot /usr/local/bin/copilot
+ && ln -sf /sandbox/.local/bin/copilot /usr/local/bin/copilot \
+ && ln -sf /sandbox/.local/bin/mise /usr/local/bin/mise
