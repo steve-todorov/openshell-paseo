@@ -142,14 +142,17 @@ RUN export HOME=/sandbox \
  && claude plugin install caveman@caveman \
  && for p in superpowers frontend-design skill-creator supabase caveman; do claude plugin list | grep -q "$p" || exit 1; done
 # Register jcodemunch as a USER-scope MCP server (available in every project + git worktree)
-# and install jcm's global code-exploration CLAUDE.md policy. Both write under HOME=/sandbox,
+# and install jcm's code-exploration policy as a USER-LEVEL RULE (~/.claude/rules/jcodemunch.md).
+# Rules auto-load every session at the same priority as CLAUDE.md, so ~/.claude/CLAUDE.md stays
+# generic (user-owned) and needs no @import. jcm can only print the policy (claude-md --generate
+# → stdout), so we redirect it into the rules file ourselves. Both write under HOME=/sandbox,
 # surviving the runtime ENV strip. The MCP command is the stable binary (no runtime uvx fetch).
 RUN export HOME=/sandbox \
  && claude mcp add --scope user jcodemunch -- /usr/local/bin/jcodemunch-mcp \
  && claude mcp list | grep -q jcodemunch \
- && mkdir -p /sandbox/.claude \
- && jcodemunch-mcp claude-md --generate --format full > /sandbox/.claude/CLAUDE.md \
- && test -s /sandbox/.claude/CLAUDE.md
+ && mkdir -p /sandbox/.claude/rules \
+ && jcodemunch-mcp claude-md --generate --format full > /sandbox/.claude/rules/jcodemunch.md \
+ && test -s /sandbox/.claude/rules/jcodemunch.md
 # Pin versions HARD. OpenShell STRIPS image ENV at runtime, so env-var update switches
 # won't apply — bake the disable into each tool's config file instead (both are read
 # from $HOME=/sandbox at runtime, surviving the strip).
