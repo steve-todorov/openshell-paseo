@@ -18,7 +18,7 @@ RUN apt-get update \
       build-essential autoconf re2c bison pkg-config \
       libxml2-dev libssl-dev libsqlite3-dev libcurl4-openssl-dev libonig-dev \
       libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libreadline-dev \
-      libbz2-dev libxslt1-dev \
+      libbz2-dev libxslt1-dev libgd-dev libicu-dev \
       libpq-dev default-libmysqlclient-dev \
  && rm -rf /var/lib/apt/lists/*
 
@@ -81,6 +81,13 @@ COPY scripts/locate /usr/local/bin/locate
 RUN chmod 0755 /usr/local/bin/locate \
  && locate libjpeg.so | grep -q 'libjpeg\.so' \
  && locate libpng.so | grep -q 'libpng\.so'
+
+# Verify the pkg-config deps asdf-php force-enables at ./configure time are discoverable.
+# asdf-php always passes `--enable-gd --with-external-gd` (needs system gdlib >= 2.1.0 via
+# libgd-dev) and `--enable-intl` (needs ICU via libicu-dev). Failing here at build is far
+# cheaper than a failed runtime PHP compile in the sandbox.
+RUN pkg-config --atleast-version=2.1.0 gdlib \
+ && pkg-config --exists icu-uc icu-i18n
 
 # --- coding agents Paseo orchestrates ---
 # Installed via the vendors' OFFICIAL install scripts (npm publishing is deprecated for
