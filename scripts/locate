@@ -1,0 +1,11 @@
+#!/bin/sh
+# Minimal `locate` for the sandbox. asdf-php / php-build call `locate libjpeg.so` and
+# `locate libpng.so` while compiling PHP, to discover the library paths for gd. The image
+# ships no mlocate/plocate — and the unprivileged runtime agent (uid 998) could not run
+# `updatedb` anyway — so emulate the single form the plugin uses: a substring match over
+# the standard library directories via `find`. Lives in /usr/local/bin (agent-allowlisted,
+# on PATH); /usr and /lib are readable to uid 998 under the sandbox Landlock policy, so this
+# resolves live at runtime with no database. Not a general locate: it matches file names in
+# the lib dirs, which is all php-build asks of it.
+pattern="$*"
+find /usr/lib /lib /usr/local/lib -name "*${pattern}*" 2>/dev/null

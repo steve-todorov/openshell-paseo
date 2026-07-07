@@ -73,6 +73,15 @@ RUN curl -fsSL -o /tmp/paseo.deb \
 COPY scripts/paseo /usr/local/bin/paseo
 RUN chmod 0755 /usr/local/bin/paseo
 
+# `locate` shim (allowlisted /usr/local/bin). php-build (asdf-php) calls `locate libjpeg.so`
+# and `locate libpng.so` while compiling PHP, and the image ships no mlocate/plocate (nor can
+# uid 998 build a locate db at runtime). Assert the shim resolves the gd libs the plugin looks
+# for — libjpeg-dev/libpng-dev are installed in the apt step above, so both must be found.
+COPY scripts/locate /usr/local/bin/locate
+RUN chmod 0755 /usr/local/bin/locate \
+ && locate libjpeg.so | grep -q 'libjpeg\.so' \
+ && locate libpng.so | grep -q 'libpng\.so'
+
 # --- coding agents Paseo orchestrates ---
 # Installed via the vendors' OFFICIAL install scripts (npm publishing is deprecated for
 # Claude Code), pinned to exact versions — we do not want moving builds in the image.
