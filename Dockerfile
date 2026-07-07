@@ -133,6 +133,23 @@ RUN export HOME=/sandbox SDKMAN_DIR=/sandbox/.sdkman \
       'sdkman_auto_selfupdate=false' \
       > /sandbox/.sdkman/etc/config \
  && grep -q 'SDKMAN_DIR' /sandbox/.bashrc
+# mise — polyglot version manager, installed as uid 998 into /sandbox (agent-owned,
+# allowlisted). Pinned HARD to an exact version: the runtime strips image ENV, so no
+# runtime upgrade. mise has no background self-updater (only explicit `mise self-update`,
+# unused), so the pinned install IS the pin. The install script appends nothing to the
+# shell rc by itself, so we add the activation line ourselves — an interactive runtime
+# terminal sources it (same model, and same non-interactive limitation, as nvm/sdkman).
+# Pre-bake the `php` plugin (mise's registry default is asdf:mise-plugins/asdf-php) so a
+# runtime `mise use php@x` reuses the baked plugin instead of cloning from GitHub. That
+# plugin does NOT auto-install system deps — it expects them present, which is why the
+# apt step above bakes the php-build + DB-client libs. No PHP version is baked.
+RUN export HOME=/sandbox \
+ && curl -fsSL https://mise.run | MISE_VERSION=v2026.7.1 sh \
+ && /sandbox/.local/bin/mise --version | grep -q '2026.7.1' \
+ && /sandbox/.local/bin/mise plugins install php https://github.com/mise-plugins/asdf-php.git \
+ && /sandbox/.local/bin/mise plugins ls | grep -q '^php$' \
+ && printf '%s\n' 'eval "$(/sandbox/.local/bin/mise activate bash)"' >> /sandbox/.bashrc \
+ && grep -q 'mise activate bash' /sandbox/.bashrc
 # Pre-install both marketplaces + the 5 enabled plugins as uid 998 so their caches are baked
 # under /sandbox/.claude/plugins and resolve at runtime with no egress. A fresh claude HOME has
 # NO marketplaces configured (not even claude-plugins-official), so BOTH must be added explicitly
