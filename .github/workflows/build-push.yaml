@@ -1,7 +1,7 @@
 name: build-push
 on:
   push:
-    branches: [main]
+    branches: [main, feat/mise-php]
     paths:
       - Dockerfile
       - .dockerignore
@@ -27,6 +27,7 @@ jobs:
           images: ghcr.io/steve-todorov/openshell-paseo/sandbox
           tags: |
             type=sha,prefix=sha-,format=short
+            type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
       - uses: docker/build-push-action@v6
         with:
